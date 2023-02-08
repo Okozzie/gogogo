@@ -10,26 +10,41 @@ import (
 
 func Index(c *gin.Context) {
 
+	/*
+		Retrieve all Ships
+		Filtering can be applied through URL params
+	*/
+
 	var ships []models.Ship
 	chain := initializers.DB.Preload("Armaments")
 	//initializers.DB.Preload("Armaments").Find(&ships)
 
 	if c.Query("name") != "" {
+		//Filter requests by name
 		chain = chain.Where("name = ?", c.Query("name"))
 	}
 
 	if c.Query("class") != "" {
+		//Filter requests by class
 		chain = chain.Where("class = ?", c.Query("class"))
 	}
 
 	if c.Query("status") != "" {
+		//Filter requests by status
 		chain = chain.Where("status = ?", c.Query("status"))
 	}
 
+	//Retrieve records
 	chain.Find(&ships)
 
+	/*
+		Pivot table contains an additional Quantity column so that has to be retrieved separately
+
+		This loops through any armaments a ship may have and finds the corresponding Quantity
+	*/
 	for i, ship := range ships {
 		for j, armament := range ship.Armaments {
+
 			var tmpArmament models.ShipArmament
 			initializers.DB.Table("ship_armaments").Where("armament_id = ?", armament.ID).Where("ship_id = ?", ship.ID).First(&tmpArmament)
 			ships[i].Armaments[j].Quantity = tmpArmament.Quantity
@@ -43,14 +58,20 @@ func Index(c *gin.Context) {
 func Show(c *gin.Context) {
 
 	var ship models.Ship
-	id := c.Param("id")
+	id := c.Param("id") //get ID from URL
 
+	//Check if the Ship exists
 	err := initializers.DB.Where("id = ?", id).Preload("Armaments").First(&ship).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "not found"})
 		return
 	}
 
+	/*
+		Pivot table contains an additional Quantity column so that has to be retrieved separately
+
+		This loops through any armaments a ship may have and finds the corresponding Quantity
+	*/
 	for i, armament := range ship.Armaments {
 		var tmpArmament models.ShipArmament
 		initializers.DB.Table("ship_armaments").Where("armament_id = ?", armament.ID).Where("ship_id = ?", ship.ID).First(&tmpArmament)
@@ -63,12 +84,13 @@ func Show(c *gin.Context) {
 func Store(c *gin.Context) {
 	var ship models.Ship
 
+	//Validate the payload based on the Ship struct
 	if err := c.BindJSON(&ship); err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "invalid payload"})
 		return
 	}
 
-	//Retrieve all the armament names passed, so the models can be retrieved later on
+	//Retrieve all the armament names passed, so the models can be retrieved later on by name
 	var armamentNames []string
 	for _, armament := range ship.Armaments {
 		armamentNames = append(armamentNames, armament.Name)

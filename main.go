@@ -7,6 +7,7 @@ import (
 )
 
 func init() {
+	//Load ENV info and connect to database
 	initializers.LoadEnvVars()
 	initializers.ConnectToDB()
 }

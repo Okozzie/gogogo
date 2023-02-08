@@ -34,11 +34,13 @@ func main() {
 		Crew:   50,
 		Image:  "image.jpg",
 		Value:  100.0,
-		Status: "Active",
+		Status: "active",
 	}
 
+	//Create the initial Ship
 	initializers.DB.Create(ship)
 
+	//Give that ship armaments by inserting into the Pivot Table
 	for _, armament := range armaments {
 		shipArmament := &models.ShipArmament{
 			ShipID:     ship.ID,

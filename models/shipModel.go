@@ -4,7 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// User has and belongs to many languages, `user_languages` is the join table
+// Many to many relationship between Ship and Armaments, `ship_armaments` is the join table
 type Ship struct {
 	gorm.Model
 	Name      string     `json:"name"`
